@@ -201,14 +201,49 @@ app.get('/api/dreams/:id/references', authenticateToken, (req, res) => {
   const dreamId = parseInt(req.params.id);
   const userId = req.user.id;
 
-  const creations = readJSON(CREATIONS_FILE).filter(c => c.userId === userId && c.dreamId === dreamId);
-  const collages = readJSON(COLLAGES_FILE).filter(c => c.userId === userId && c.dreamIds && c.dreamIds.includes(dreamId));
-  const recreations = readJSON(RECREATIONS_FILE).filter(r => r.userId === userId && r.dreamId === dreamId);
+  const allCreations = readJSON(CREATIONS_FILE).filter(c => c.userId === userId);
+  const allCollages = readJSON(COLLAGES_FILE).filter(c => c.userId === userId);
+  const allRecreations = readJSON(RECREATIONS_FILE).filter(r => r.userId === userId);
+
+  const creations = allCreations.filter(c => c.dreamId === dreamId);
+  const collages = allCollages.filter(c => c.dreamIds && c.dreamIds.includes(dreamId));
+
+  const creationMap = new Map(allCreations.map(c => [c.id, c]));
+  const collageMap = new Map(allCollages.map(c => [c.id, c]));
+
+  const recreations = allRecreations.filter(r => {
+    if (r.dreamId === dreamId) return true;
+    if (r.sourceType === 'creation') {
+      const sourceCreation = creationMap.get(r.sourceId);
+      return sourceCreation && sourceCreation.dreamId === dreamId;
+    }
+    if (r.sourceType === 'collage') {
+      const sourceCollage = collageMap.get(r.sourceId);
+      return sourceCollage && sourceCollage.dreamIds && sourceCollage.dreamIds.includes(dreamId);
+    }
+    return false;
+  }).map(r => {
+    let refType = 'direct';
+    if (r.dreamId !== dreamId) {
+      refType = r.sourceType === 'creation' ? 'via-creation' : 'via-collage';
+    }
+    return {
+      id: r.id,
+      type: 'recreation',
+      title: r.title,
+      description: r.description,
+      createdAt: r.createdAt,
+      sourceType: '再创作记录',
+      sourceRefType: r.sourceType,
+      sourceRefId: r.sourceId,
+      refType: refType
+    };
+  });
 
   const references = {
     creations: creations.map(c => ({ id: c.id, type: 'creation', title: c.title, description: c.description, createdAt: c.createdAt, sourceType: '创作任务' })),
     collages: collages.map(c => ({ id: c.id, type: 'collage', title: c.title, description: c.description, createdAt: c.createdAt, sourceType: '拼贴卡' })),
-    recreations: recreations.map(r => ({ id: r.id, type: 'recreation', title: r.title, description: r.description, createdAt: r.createdAt, sourceType: '再创作记录', sourceRefType: r.sourceType, sourceRefId: r.sourceId }))
+    recreations: recreations
   };
 
   res.json(references);

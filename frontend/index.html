@@ -258,28 +258,47 @@
                   <div class="node-icon">🌙</div>
                   <div class="node-title">梦境 #{{ selectedDream.id }}</div>
                 </div>
+                <div class="graph-connector">
+                  <div class="connector-line"></div>
+                  <div class="connector-hub">
+                    <div 
+                      v-for="(ref, idx) in getAllReferences()" 
+                      :key="'hub-' + ref.type + '-' + ref.id"
+                      class="connector-spoke"
+                      :style="'--spoke-index: ' + idx + '; --total-spokes: ' + getAllReferences().length"
+                    ></div>
+                  </div>
+                </div>
               </div>
               
-              <div class="graph-lines"></div>
-              
-              <div class="graph-items">
+              <div class="graph-items" :style="'--total-items: ' + getAllReferences().length">
                 <div 
-                  v-for="ref in getAllReferences()" 
+                  v-for="(ref, idx) in getAllReferences()" 
                   :key="ref.type + '-' + ref.id"
                   class="graph-item clickable"
-                  :class="'item-' + ref.type"
+                  :class="['item-' + ref.type, { 'item-indirect': ref.refType && ref.refType !== 'direct' }]"
+                  :style="'--item-index: ' + idx"
                   @click="openDetail(ref.type, ref.id)"
                 >
-                  <div class="graph-item-header">
-                    <span class="item-icon">
-                      {{ ref.type === 'creation' ? '🎨' : ref.type === 'collage' ? '🖼️' : '🔄' }}
-                    </span>
-                    <span class="item-type badge" :class="'badge-' + ref.type">{{ ref.sourceType }}</span>
+                  <div class="graph-item-line" :class="'line-' + ref.type"></div>
+                  <div class="graph-item-content">
+                    <div class="graph-item-header">
+                      <span class="item-icon">
+                        {{ ref.type === 'creation' ? '🎨' : ref.type === 'collage' ? '🖼️' : '🔄' }}
+                      </span>
+                      <span class="item-type badge" :class="'badge-' + ref.type">
+                        {{ ref.sourceType }}
+                      </span>
+                    </div>
+                    <div class="item-title">{{ ref.title }}</div>
+                    <div class="item-desc">{{ ref.description }}</div>
+                    <div class="item-meta">📅 {{ ref.createdAt }}</div>
+                    <div v-if="ref.refType && ref.refType !== 'direct'" class="item-indirect-tag">
+                      <span class="indirect-icon">↳</span>
+                      通过{{ ref.refType === 'via-creation' ? '创作任务' : '拼贴卡' }}间接引用
+                    </div>
+                    <div class="item-action">点击查看详情 →</div>
                   </div>
-                  <div class="item-title">{{ ref.title }}</div>
-                  <div class="item-desc">{{ ref.description }}</div>
-                  <div class="item-meta">📅 {{ ref.createdAt }}</div>
-                  <div class="item-action">点击查看详情 →</div>
                 </div>
               </div>
             </div>
