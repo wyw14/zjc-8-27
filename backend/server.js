@@ -12,6 +12,9 @@ const JWT_SECRET = 'dream-secret-key-2024';
 const DATA_DIR = path.join(__dirname, 'data');
 const DREAMS_FILE = path.join(DATA_DIR, 'dreams.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const CREATIONS_FILE = path.join(DATA_DIR, 'creations.json');
+const COLLAGES_FILE = path.join(DATA_DIR, 'collages.json');
+const RECREATIONS_FILE = path.join(DATA_DIR, 'recreations.json');
 
 app.use(cors());
 app.use(express.json());
@@ -192,6 +195,62 @@ app.get('/api/stats/monthly', authenticateToken, (req, res) => {
     count,
     avgLucidity: parseFloat(avgLucidity)
   });
+});
+
+app.get('/api/dreams/:id/references', authenticateToken, (req, res) => {
+  const dreamId = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  const creations = readJSON(CREATIONS_FILE).filter(c => c.userId === userId && c.dreamId === dreamId);
+  const collages = readJSON(COLLAGES_FILE).filter(c => c.userId === userId && c.dreamIds && c.dreamIds.includes(dreamId));
+  const recreations = readJSON(RECREATIONS_FILE).filter(r => r.userId === userId && r.dreamId === dreamId);
+
+  const references = {
+    creations: creations.map(c => ({ id: c.id, type: 'creation', title: c.title, description: c.description, createdAt: c.createdAt, sourceType: '创作任务' })),
+    collages: collages.map(c => ({ id: c.id, type: 'collage', title: c.title, description: c.description, createdAt: c.createdAt, sourceType: '拼贴卡' })),
+    recreations: recreations.map(r => ({ id: r.id, type: 'recreation', title: r.title, description: r.description, createdAt: r.createdAt, sourceType: '再创作记录', sourceRefType: r.sourceType, sourceRefId: r.sourceId }))
+  };
+
+  res.json(references);
+});
+
+app.get('/api/creations', authenticateToken, (req, res) => {
+  const creations = readJSON(CREATIONS_FILE).filter(c => c.userId === req.user.id);
+  res.json(creations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+app.get('/api/creations/:id', authenticateToken, (req, res) => {
+  const creation = readJSON(CREATIONS_FILE).find(c => c.id === parseInt(req.params.id) && c.userId === req.user.id);
+  if (!creation) {
+    return res.status(404).json({ error: '创作任务不存在' });
+  }
+  res.json(creation);
+});
+
+app.get('/api/collages', authenticateToken, (req, res) => {
+  const collages = readJSON(COLLAGES_FILE).filter(c => c.userId === req.user.id);
+  res.json(collages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+app.get('/api/collages/:id', authenticateToken, (req, res) => {
+  const collage = readJSON(COLLAGES_FILE).find(c => c.id === parseInt(req.params.id) && c.userId === req.user.id);
+  if (!collage) {
+    return res.status(404).json({ error: '拼贴卡不存在' });
+  }
+  res.json(collage);
+});
+
+app.get('/api/recreations', authenticateToken, (req, res) => {
+  const recreations = readJSON(RECREATIONS_FILE).filter(r => r.userId === req.user.id);
+  res.json(recreations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+app.get('/api/recreations/:id', authenticateToken, (req, res) => {
+  const recreation = readJSON(RECREATIONS_FILE).find(r => r.id === parseInt(req.params.id) && r.userId === req.user.id);
+  if (!recreation) {
+    return res.status(404).json({ error: '再创作记录不存在' });
+  }
+  res.json(recreation);
 });
 
 app.listen(PORT, () => {

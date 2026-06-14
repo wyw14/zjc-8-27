@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "dreamId": 1,
+    "title": "水晶城堡插画",
+    "description": "根据紫色云海与水晶城堡的梦境创作的水彩插画",
+    "type": "illustration",
+    "createdAt": "2026-06-02"
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "dreamId": 3,
+    "title": "海底漫步短诗",
+    "description": "以海底漫步的梦为灵感写下的一首短诗",
+    "type": "poem",
+    "createdAt": "2026-06-11"
+  },
+  {
+    "id": 3,
+    "userId": 1,
+    "dreamId": 5,
+    "title": "星空行走油画",
+    "description": "描绘在太空行走、触摸星星的超现实油画",
+    "type": "painting",
+    "createdAt": "2026-05-16"
+  }
+]

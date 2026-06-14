@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "dreamId": 2,
+    "sourceType": "creation",
+    "sourceId": 2,
+    "title": "飞鸟意象变奏",
+    "description": "基于飞鸟梦境的再创作，延伸出自由意象的散文",
+    "createdAt": "2026-06-06"
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "dreamId": 1,
+    "sourceType": "collage",
+    "sourceId": 1,
+    "title": "云堡乐章",
+    "description": "基于\"云端与星辰\"拼贴的再创作音乐构思",
+    "createdAt": "2026-06-04"
+  }
+]

@@ -113,11 +113,39 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="tabs">
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'dreams' }" 
+            @click="currentTab = 'dreams'"
+          >📚 梦境列表</button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'creations' }" 
+            @click="currentTab = 'creations'"
+          >🎨 创作任务</button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'collages' }" 
+            @click="currentTab = 'collages'"
+          >🖼️ 拼贴卡</button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'recreations' }" 
+            @click="currentTab = 'recreations'"
+          >🔄 再创作记录</button>
+        </div>
+
+        <div v-if="currentTab === 'dreams'" class="card">
           <h2>📚 梦境列表</h2>
           <div v-if="dreams.length === 0" class="empty-dream">还没有记录梦境</div>
           <div v-else class="dream-list">
-            <div v-for="dream in dreams" :key="dream.id" class="dream-item">
+            <div 
+              v-for="dream in dreams" 
+              :key="dream.id" 
+              class="dream-item clickable"
+              @click="openDreamDetail(dream)"
+            >
               <div class="dream-header">
                 <span class="dream-date">{{ dream.date }}</span>
                 <span class="dream-lucidity">
@@ -125,10 +153,187 @@
                 </span>
               </div>
               <div class="dream-text">{{ dream.content }}</div>
+              <div class="dream-hint">点击查看详情和引用关系 →</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentTab === 'creations'" class="card">
+          <h2>🎨 创作任务</h2>
+          <div v-if="creations.length === 0" class="empty-dream">还没有创作任务</div>
+          <div v-else class="content-list">
+            <div 
+              v-for="item in creations" 
+              :key="item.id" 
+              class="content-item clickable"
+              @click="openDetail('creation', item.id)"
+            >
+              <div class="content-header">
+                <span class="content-title">{{ item.title }}</span>
+                <span class="content-type badge-creation">创作任务</span>
+              </div>
+              <div class="content-desc">{{ item.description }}</div>
+              <div class="content-meta">
+                <span class="content-date">📅 {{ item.createdAt }}</span>
+                <span class="content-type-text">类型: {{ item.type }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentTab === 'collages'" class="card">
+          <h2>🖼️ 拼贴卡</h2>
+          <div v-if="collages.length === 0" class="empty-dream">还没有拼贴卡</div>
+          <div v-else class="content-list">
+            <div 
+              v-for="item in collages" 
+              :key="item.id" 
+              class="content-item clickable"
+              @click="openDetail('collage', item.id)"
+            >
+              <div class="content-header">
+                <span class="content-title">{{ item.title }}</span>
+                <span class="content-type badge-collage">拼贴卡</span>
+              </div>
+              <div class="content-desc">{{ item.description }}</div>
+              <div class="content-meta">
+                <span class="content-date">📅 {{ item.createdAt }}</span>
+                <span class="content-type-text">引用 {{ item.dreamIds?.length || 0 }} 个梦境</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentTab === 'recreations'" class="card">
+          <h2>🔄 再创作记录</h2>
+          <div v-if="recreations.length === 0" class="empty-dream">还没有再创作记录</div>
+          <div v-else class="content-list">
+            <div 
+              v-for="item in recreations" 
+              :key="item.id" 
+              class="content-item clickable"
+              @click="openDetail('recreation', item.id)"
+            >
+              <div class="content-header">
+                <span class="content-title">{{ item.title }}</span>
+                <span class="content-type badge-recreation">再创作</span>
+              </div>
+              <div class="content-desc">{{ item.description }}</div>
+              <div class="content-meta">
+                <span class="content-date">📅 {{ item.createdAt }}</span>
+                <span class="content-type-text">来源: {{ getTypeLabel(item.sourceType) }}</span>
+              </div>
             </div>
           </div>
         </div>
       </main>
+    </div>
+
+    <div v-if="showDreamModal" class="modal-overlay" @click.self="closeDreamDetail">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2>🌙 梦境详情</h2>
+          <button class="modal-close" @click="closeDreamDetail">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="dream-detail">
+            <div class="dream-detail-header">
+              <span class="dream-date">{{ selectedDream.date }}</span>
+              <span class="dream-lucidity">
+                清醒度: 
+                <span v-for="n in 5" :key="n" class="star">{{ n <= selectedDream.lucidity ? '★' : '☆' }}</span>
+              </span>
+            </div>
+            <div class="dream-detail-content">"{{ selectedDream.content }}"</div>
+          </div>
+
+          <div class="references-section">
+            <h3 class="references-title">🔗 引用关系图</h3>
+            <div v-if="getAllReferences().length === 0" class="empty-references">
+              这个梦境还没有被任何创作内容引用过
+            </div>
+            <div v-else class="references-graph">
+              <div class="graph-center">
+                <div class="graph-node dream-node">
+                  <div class="node-icon">🌙</div>
+                  <div class="node-title">梦境 #{{ selectedDream.id }}</div>
+                </div>
+              </div>
+              
+              <div class="graph-lines"></div>
+              
+              <div class="graph-items">
+                <div 
+                  v-for="ref in getAllReferences()" 
+                  :key="ref.type + '-' + ref.id"
+                  class="graph-item clickable"
+                  :class="'item-' + ref.type"
+                  @click="openDetail(ref.type, ref.id)"
+                >
+                  <div class="graph-item-header">
+                    <span class="item-icon">
+                      {{ ref.type === 'creation' ? '🎨' : ref.type === 'collage' ? '🖼️' : '🔄' }}
+                    </span>
+                    <span class="item-type badge" :class="'badge-' + ref.type">{{ ref.sourceType }}</span>
+                  </div>
+                  <div class="item-title">{{ ref.title }}</div>
+                  <div class="item-desc">{{ ref.description }}</div>
+                  <div class="item-meta">📅 {{ ref.createdAt }}</div>
+                  <div class="item-action">点击查看详情 →</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDetailModal" class="modal-overlay" @click.self="closeDetail">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>
+            {{ selectedDetailType === 'creation' ? '🎨' : selectedDetailType === 'collage' ? '🖼️' : '🔄' }}
+            {{ getTypeLabel(selectedDetailType) }}详情
+          </h2>
+          <button class="modal-close" @click="closeDetail">×</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="selectedDetail" class="detail-view">
+            <div class="detail-title">{{ selectedDetail.title }}</div>
+            <div class="detail-type badge" :class="'badge-' + selectedDetailType">
+              {{ getTypeLabel(selectedDetailType) }}
+            </div>
+            <div class="detail-desc">{{ selectedDetail.description }}</div>
+            
+            <div class="detail-meta">
+              <div v-if="selectedDetail.createdAt">
+                <span class="meta-label">创建日期:</span>
+                <span>{{ selectedDetail.createdAt }}</span>
+              </div>
+              <div v-if="selectedDetail.type">
+                <span class="meta-label">类型:</span>
+                <span>{{ selectedDetail.type }}</span>
+              </div>
+              <div v-if="selectedDetail.dreamId">
+                <span class="meta-label">引用梦境ID:</span>
+                <span>#{{ selectedDetail.dreamId }}</span>
+              </div>
+              <div v-if="selectedDetail.dreamIds && selectedDetail.dreamIds.length > 0">
+                <span class="meta-label">引用梦境ID:</span>
+                <span>{{ selectedDetail.dreamIds.map(id => '#' + id).join(', ') }}</span>
+              </div>
+              <div v-if="selectedDetail.sourceType">
+                <span class="meta-label">来源类型:</span>
+                <span>{{ getTypeLabel(selectedDetail.sourceType) }}</span>
+              </div>
+              <div v-if="selectedDetail.sourceId">
+                <span class="meta-label">来源ID:</span>
+                <span>#{{ selectedDetail.sourceId }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

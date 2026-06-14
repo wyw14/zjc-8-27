@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "dreamIds": [
+      1,
+      5
+    ],
+    "title": "云端与星辰",
+    "description": "将紫色云海与太空行走的意象拼贴在一起",
+    "imageUrl": "",
+    "createdAt": "2026-06-03"
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "dreamIds": [
+      3,
+      6
+    ],
+    "title": "书海与深洋",
+    "description": "海底珊瑚与图书馆蝴蝶的梦幻拼贴",
+    "imageUrl": "",
+    "createdAt": "2026-06-13"
+  }
+]

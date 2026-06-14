@@ -16,6 +16,18 @@ createApp({
     const randomDream = ref(null);
     const monthlyStats = ref({ count: 0, avgLucidity: 0 });
 
+    const currentTab = ref('dreams');
+    const selectedDream = ref(null);
+    const dreamReferences = ref({ creations: [], collages: [], recreations: [] });
+    const showDreamModal = ref(false);
+    const showDetailModal = ref(false);
+    const selectedDetail = ref(null);
+    const selectedDetailType = ref('');
+
+    const creations = ref([]);
+    const collages = ref([]);
+    const recreations = ref([]);
+
     const now = new Date();
     const selectedYear = ref(now.getFullYear());
     const selectedMonth = ref(now.getMonth() + 1);
@@ -160,6 +172,91 @@ createApp({
       }
     }
 
+    async function fetchDreamReferences(dreamId) {
+      try {
+        const data = await apiRequest(`/dreams/${dreamId}/references`);
+        dreamReferences.value = data;
+      } catch (e) {
+        console.error('获取梦境引用关系失败', e);
+        dreamReferences.value = { creations: [], collages: [], recreations: [] };
+      }
+    }
+
+    async function fetchCreations() {
+      try {
+        const data = await apiRequest('/creations');
+        creations.value = data;
+      } catch (e) {
+        console.error('获取创作任务失败', e);
+      }
+    }
+
+    async function fetchCollages() {
+      try {
+        const data = await apiRequest('/collages');
+        collages.value = data;
+      } catch (e) {
+        console.error('获取拼贴卡失败', e);
+      }
+    }
+
+    async function fetchRecreations() {
+      try {
+        const data = await apiRequest('/recreations');
+        recreations.value = data;
+      } catch (e) {
+        console.error('获取再创作记录失败', e);
+      }
+    }
+
+    async function openDreamDetail(dream) {
+      selectedDream.value = dream;
+      await fetchDreamReferences(dream.id);
+      showDreamModal.value = true;
+    }
+
+    function closeDreamDetail() {
+      showDreamModal.value = false;
+      selectedDream.value = null;
+      dreamReferences.value = { creations: [], collages: [], recreations: [] };
+    }
+
+    async function openDetail(type, id) {
+      try {
+        const data = await apiRequest(`/${type}s/${id}`);
+        selectedDetail.value = data;
+        selectedDetailType.value = type;
+        showDetailModal.value = true;
+        closeDreamDetail();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function closeDetail() {
+      showDetailModal.value = false;
+      selectedDetail.value = null;
+      selectedDetailType.value = '';
+    }
+
+    function getTypeLabel(type) {
+      const labels = {
+        creation: '创作任务',
+        collage: '拼贴卡',
+        recreation: '再创作记录'
+      };
+      return labels[type] || type;
+    }
+
+    function getAllReferences() {
+      const all = [
+        ...dreamReferences.value.creations,
+        ...dreamReferences.value.collages,
+        ...dreamReferences.value.recreations
+      ];
+      return all;
+    }
+
     function onMonthChange() {
       fetchMonthlyStats();
     }
@@ -191,6 +288,9 @@ createApp({
     function loadData() {
       fetchDreams();
       fetchMonthlyStats();
+      fetchCreations();
+      fetchCollages();
+      fetchRecreations();
     }
 
     function createWhiteNoise() {
@@ -276,7 +376,23 @@ createApp({
       selectedYear,
       selectedMonth,
       yearOptions,
-      onMonthChange
+      onMonthChange,
+      currentTab,
+      selectedDream,
+      dreamReferences,
+      showDreamModal,
+      showDetailModal,
+      selectedDetail,
+      selectedDetailType,
+      creations,
+      collages,
+      recreations,
+      openDreamDetail,
+      closeDreamDetail,
+      openDetail,
+      closeDetail,
+      getTypeLabel,
+      getAllReferences
     };
   }
 }).mount('#app');
